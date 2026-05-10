@@ -3,7 +3,9 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } fro
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { format } from 'date-fns';
-import { FileText, Download, CheckCircle, Trash2, LogIn, Monitor, ArrowLeft } from 'lucide-react';
+import { CVPreview } from '../components/CVPreview';
+import { FileText, Download, CheckCircle, Trash2, LogIn, Monitor, ArrowLeft, Printer, X } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 
 interface CVSubmission {
@@ -73,11 +75,6 @@ export default function TeacherDashboard() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Login failed", error);
-      if (error.code === 'auth/unauthorized-domain') {
-        alert(`Login blocked. Please add this URL (${window.location.hostname}) to the 'Authorized domains' list in your Firebase Console (Authentication > Settings > Authorized domains).`);
-      } else {
-        alert("Login failed: " + error.message);
-      }
     }
   };
 
@@ -102,21 +99,10 @@ export default function TeacherDashboard() {
     }
   };
 
-  const printCV = (cvObj: any) => {
-    // Generate a printable window
-    const newWindow = window.open('', '_blank');
-    if (!newWindow) return;
-    
-    // We pass the stringified CV data via local storage or just inject it to a printable html.
-    // For simplicity, we can set localStorage on that window then load the builder route with a print flag,
-    // or just render the CV manually. However, we already have a robust Preview component.
-    // Instead of opening a new window, a simpler approach for MVP is setting local storage 
-    // and navigating to the CV builder, or handling it within the dashboard.
-    // But since teacher just wants to print, doing it directly in-app is best.
-    
-    localStorage.setItem('btec-cv-data', JSON.stringify(cvObj));
-    window.open('/', '_blank');
+  const viewCV = (cvObj: any) => {
+    setSelectedCV(cvObj);
   };
+
 
   if (!user) {
     return (
@@ -144,8 +130,8 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 overflow-hidden">
-      <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm shrink-0">
+    <div className="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 overflow-hidden print:h-auto print:overflow-visible print:bg-white print:block">
+      <header className={`h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm shrink-0 ${selectedCV ? 'print:hidden' : ''}`}>
          <div className="flex items-center gap-3">
           <Link to="/" className="text-slate-400 hover:text-blue-600 mr-2" title="Back to Builder">
             <ArrowLeft size={20} />
@@ -161,7 +147,7 @@ export default function TeacherDashboard() {
         </div>
       </header>
       
-      <main className="flex-1 overflow-auto p-6 flex justify-center">
+      <main className={`flex-1 overflow-auto p-6 flex justify-center ${selectedCV ? 'print:hidden' : ''}`}>
         <div className="max-w-5xl w-full">
           <div className="flex justify-between items-end mb-6">
             <div>
@@ -215,13 +201,13 @@ export default function TeacherDashboard() {
                             onClick={() => {
                                try { 
                                  const parsed = JSON.parse(sub.cvData); 
-                                 printCV(parsed);
+                                 viewCV(parsed);
                                } catch (e) {} 
                             }}
                             className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
-                            title="Open in Builder & Print"
+                            title="View CV"
                           >
-                             <FileText size={16} /> Open
+                             <FileText size={16} /> View
                           </button>
                           
                           {sub.status === 'submitted' && (
@@ -249,6 +235,38 @@ export default function TeacherDashboard() {
           )}
         </div>
       </main>
+
+      {/* CV Modal Overlay */}
+      {selectedCV && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/80 print:bg-white print:relative print:w-full print:h-full">
+          <div className="flex bg-slate-900 text-white h-14 shrink-0 px-4 items-center justify-between print:hidden shadow-md">
+            <h2 className="font-semibold">{selectedCV.personalDetails?.fullName || 'Student'} - CV</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.print()}
+                className="flex items-center px-4 py-2 hover:bg-slate-800 rounded-md transition-colors gap-2"
+              >
+                <Printer size={16} />
+                <span>Print</span>
+              </button>
+              <div className="w-px h-6 bg-slate-700 mx-2 hidden sm:block" />
+              <button
+                onClick={() => setSelectedCV(null)}
+                className="flex items-center p-2 hover:bg-slate-800 rounded-md transition-colors text-slate-300 hover:text-white"
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center print:p-0 print:overflow-visible">
+            <div className="w-full max-w-[210mm] print:max-w-none">
+              <CVPreview data={selectedCV} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
