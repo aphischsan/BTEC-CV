@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@media print {
+  /* Hide everything by default in print mode */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Only show the CV preview container and its children */
+  #cv-preview, #cv-preview *,
+  #cover-letter-preview, #cover-letter-preview * {
+    visibility: visible;
+  }
+  
+  /* Reset positioning for the preview so it starts at the top of the printed page */
+  #cv-preview, #cover-letter-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Force background colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Attempt to keep sections together */
+  .cv-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
