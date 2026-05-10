@@ -26,6 +26,16 @@ export function CoverLetterGenerator({ data }: Props) {
     setError('');
     
     try {
+      // Check if we need to let the user select a key.
+      if (typeof window !== 'undefined' && (window as any).aistudio) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+           await (window as any).aistudio.openSelectKey();
+           setIsGenerating(false);
+           return;
+        }
+      }
+
       const apiKey = process.env.GEMINI_API_KEY;
       const ai = new GoogleGenAI({ apiKey });
       
