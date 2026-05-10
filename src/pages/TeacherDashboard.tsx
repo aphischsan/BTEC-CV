@@ -71,8 +71,13 @@ export default function TeacherDashboard() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        alert(`Login blocked. Please add this URL (${window.location.hostname}) to the 'Authorized domains' list in your Firebase Console (Authentication > Settings > Authorized domains).`);
+      } else {
+        alert("Login failed: " + error.message);
+      }
     }
   };
 

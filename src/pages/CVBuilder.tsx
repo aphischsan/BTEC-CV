@@ -143,7 +143,7 @@ export default function CVBuilder() {
         </section>
 
         {/* Preview / Cover Letter Panel */}
-        <section className={`flex-1 bg-slate-200 flex-col overflow-hidden print:bg-white print:overflow-visible ${activeTab === 'edit' ? 'hidden lg:flex' : 'flex'}`}>
+        <section className={`flex-1 bg-slate-200 flex-col overflow-hidden print:bg-white print:overflow-visible print:!flex ${activeTab === 'edit' ? 'hidden lg:flex' : 'flex'}`}>
           {/* Desktop Right Panel Tabs */}
           <div className="hidden lg:flex bg-white px-6 border-b border-slate-200 shrink-0 print:hidden items-end gap-6 h-12">
             <button
