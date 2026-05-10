@@ -27,10 +27,6 @@ export function CoverLetterGenerator({ data }: Props) {
     
     try {
       const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("Gemini API key is not configured.");
-      }
-      
       const ai = new GoogleGenAI({ apiKey });
       
       const prompt = `You are an expert career advisor helping a BTEC vocational student write a simple, professional, and confident cover letter based on their CV.
