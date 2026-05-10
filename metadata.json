@@ -1,0 +1,6 @@
+{
+  "name": "BTEC Simple CV Builder",
+  "description": "A web app to help BTEC students create a simple, professional CV with a live preview and PDF download.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

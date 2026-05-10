@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0.1 Globals
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    
+    // Admin check - bootstrap with the specific user email and admins collection check.
+    function isAdmin() {
+      return (isSignedIn() && request.auth.token.email == 'pissan282@gmail.com') ||
+             (isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation for CVSubmission
+    function isValidCVSubmission(data) {
+      return data.keys().hasAll(['status', 'studentName', 'studentEmail', 'cvData', 'createdAt']) && 
+             data.keys().size() == 5 &&
+             data.status in ['submitted', 'reviewed'] &&
+             data.studentName is string && data.studentName.size() <= 200 &&
+             data.studentEmail is string && data.studentEmail.size() <= 200 &&
+             data.cvData is string && data.cvData.size() <= 100000 &&
+             data.createdAt == request.time;
+    }
+
+    match /cv_submissions/{submissionId} {
+      // 0.2 Read Rules
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+
+      // 0.3 Write Rules
+      // Unauthenticated creation allowed for students submitting CVs. Status must be "submitted".
+      allow create: if isValidId(submissionId) && 
+                       isValidCVSubmission(incoming()) &&
+                       incoming().status == 'submitted';
+
+      allow update: if isValidId(submissionId) && isAdmin() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status']) &&
+        incoming().status in ['submitted', 'reviewed']
+      );
+
+      allow delete: if isAdmin();
+    }
+  }
+}

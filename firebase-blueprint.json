@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "CVSubmission": {
+      "title": "CV Submission",
+      "description": "A submitted CV from a student",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["submitted", "reviewed"],
+          "description": "Status of the CV submission"
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Name of the student"
+        },
+        "studentEmail": {
+          "type": "string",
+          "description": "Email of the student"
+        },
+        "cvData": {
+          "type": "string",
+          "description": "JSON stringified CV data to avoid complex nested schema validation in rules"
+        },
+        "createdAt": {
+          "type": "timestamp"
+        }
+      },
+      "required": ["status", "studentName", "studentEmail", "cvData", "createdAt"]
+    }
+  },
+  "firestore": {
+    "cv_submissions/{submissionId}": {
+      "schema": {
+        "$ref": "#/entities/CVSubmission"
+      },
+      "description": "Collection of submitted CVs"
+    }
+  }
+}
