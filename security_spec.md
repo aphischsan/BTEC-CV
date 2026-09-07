@@ -1,26 +1,49 @@
 # Security Spec
 
-## Data Invariants
-- A CV Submission can be created by anyone (unauthenticated users allowed as per MVP requirements, no login for students).
-- `cvData` is a stringified JSON payload to simplify the structure in Firestore and prevent deep nesting abuse. It must be a string and limited to say, 50,000 characters.
-- `studentName` and `studentEmail` are strings. `studentName` must not exceed 200 chars. `studentEmail` must not exceed 200 chars.
-- `status` must be 'submitted' upon creation.
-- Only an administrator can read (list/get), update, or delete the submissions.
-- Administrator is determined by the `isAdmin()` helper. A user is admin if their uid exists in the `/databases/$(database)/documents/admins/$(request.auth.uid)` collection. To bootstrap, we will write a rule allowing `pissan282@gmail.com` as an admin, or we can just require the `admins` document. Actually, the rule can be: `exists(/databases/$(database)/documents/admins/$(request.auth.uid))`. But how does `pissan282@gmail.com` get added to `admins`? Since the user is `pissan282@gmail.com`, we can simply add `request.auth.token.email == "pissan282@gmail.com"` to `isAdmin()`.
+## Data invariants
 
-## The Dirty Dozen Payloads
-1. Create with missing fields (e.g. missing cvData). -> Rejected by exact keys.
-2. Create with extra field 'isAdmin: true'. -> Rejected by exact keys.
-3. Create with invalid status 'reviewed'. -> Rejected, must be 'submitted' on create.
-4. Create with non-string studentName. -> Rejected by type check.
-5. Create with oversized cvData (> 50k chars). -> Rejected by .size() limit.
-6. Create with invalid id payload (if we check id, but here it's auto-id so we don't strictly enforce ID besides string size if manually provided. For collections, creation relies on auto-id).
-7. Read CVs as unauthenticated user. -> Rejected (requires Admin).
-8. Read CVs as authenticated non-admin user. -> Rejected (requires Admin).
-9. Update CV to change studentName. -> Rejected (requires Admin).
-10. Update CV status as non-admin. -> Rejected (requires Admin).
-11. Update CV as Admin with missing/wrong status. -> Rejected by validation.
-12. Delete CV as non-admin. -> Rejected (requires Admin).
+- A CV submission can be created without a student login.
+- A submission has exactly five fields: `status`, `studentName`, `studentEmail`, `cvData`, and `createdAt`.
+- `cvData` is stringified JSON and is limited to 50,000 characters.
+- `studentName` and `studentEmail` are strings limited to 200 characters.
+- `status` must be `submitted` when a student creates a document.
+- Only an administrator can read, list, update, or delete submissions.
+- The bootstrap teacher email must be verified.
+- Additional administrators can be granted access with an `admins/{uid}` document.
 
-## The Test Runner
-(Will be implemented in `firestore.rules.test.ts`)
+## AI data handling
+
+- The Gemini API key must never be bundled into the browser.
+- AI generation is performed by the Firebase callable function `generateCoverLetter`.
+- The Gemini secret is stored in Firebase Secret Manager as `GEMINI_API_KEY`.
+- The AI request intentionally excludes student email, phone number and home address.
+- The callable function validates and truncates input before sending it to Gemini.
+
+## Browser data
+
+The CV builder uses local storage so students do not lose work after a refresh.
+
+- Successful submission removes the persisted CV from local storage.
+- A visible **Clear this CV** control lets a student clear the current device before another student uses it.
+
+## Firestore rule tests
+
+`firestore.rules.test.ts` covers:
+
+1. Valid unauthenticated submission.
+2. Extra-field rejection.
+3. Rejection of `reviewed` on student creation.
+4. Rejection of CV payloads over 50,000 characters.
+5. Rejection of unauthenticated reads.
+6. Rejection of authenticated non-admin reads.
+7. Verified bootstrap-admin read.
+8. Admin status update.
+9. Rejection of admin edits to protected student fields.
+
+Run the suite with:
+
+`npm run test:rules`
+
+## Production hardening still requiring Firebase project configuration
+
+Enable Firebase App Check for the production web app and enforce it for Firestore and callable Functions. This requires provider/site configuration in Firebase and therefore is not safely hard-coded into source control.

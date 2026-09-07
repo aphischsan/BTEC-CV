@@ -1,0 +1,21 @@
+{
+  "name": "btec-cv-functions",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "@google/genai": "^2.21.0",
+    "firebase-admin": "^14.3.0",
+    "firebase-functions": "^7.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "~5.8.2"
+  }
+}
